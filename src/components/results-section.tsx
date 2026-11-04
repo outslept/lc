@@ -1,57 +1,85 @@
-import { getAPCALevel, getContrastDirection } from '../lib/eval'
+import {
+  getAPCALevel,
+  getWCAGLevel,
+  getContrastDirection,
+  getComparisonNote,
+} from '../lib/eval'
+import { useColorStore } from '../store/color'
 
 interface ResultsSectionProps {
   contrastScore: number
+  wcagScore: number
 }
 
-function ScoreVisualization({ score, color }: { score: number; color: string }) {
-  const absScore = Math.abs(score)
-  const maxScore = 106
-  const percentage = Math.min((absScore / maxScore) * 100, 100)
+export function ResultsSection({ contrastScore, wcagScore }: ResultsSectionProps) {
+  const { size, weight } = useColorStore()
+  const apca = getAPCALevel(contrastScore, size, weight)
+  const wcag = getWCAGLevel(wcagScore)
+  const percentage = Math.min((Math.abs(contrastScore) / 106) * 100, 100)
+
+  const cards = [
+    {
+      label: 'APCA',
+      badge: apca,
+      content: (
+        <>
+          <span className="text-xs text-[var(--text-muted)] mr-0.5">Lc</span>
+          {contrastScore > 0 ? '+' : ''}
+          {contrastScore.toFixed(1)}
+        </>
+      ),
+    },
+    {
+      label: 'WCAG 2.1',
+      badge: wcag,
+      content: (
+        <>
+          {wcagScore.toFixed(2)}
+          <span className="text-xs text-[var(--text-muted)]">:1</span>
+        </>
+      ),
+    },
+  ]
 
   return (
-    <div className="relative w-full h-2 bg-[#2c2c2e] rounded-full overflow-hidden">
-      <div
-        className="absolute left-0 top-0 h-full rounded-full transition-all duration-1000 ease-out"
-        style={{
-          width: `${percentage}%`,
-          backgroundColor: color,
-          boxShadow: `0 0 8px ${color}40`
-        }}
-      />
-    </div>
-  )
-}
+    <section className="panel p-3.5 space-y-3 tabular-nums">
+      <header className="flex items-center justify-between">
+        <span className="text-[11px] font-medium text-[var(--text-primary)]">contrast</span>
+        <span className="text-[10px] text-[var(--text-muted)]">
+          {getContrastDirection(contrastScore)}
+        </span>
+      </header>
 
-function ResultsSection({ contrastScore }: ResultsSectionProps) {
-  const { level, color } = getAPCALevel(contrastScore)
-
-  return (
-    <div className="bg-[#1c1c1e] rounded-3xl p-4 sm:p-6 h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
-        <div className="mb-2 sm:mb-0">
-          <h2 className="text-[14px] sm:text-[15px] font-semibold text-white tracking-[-0.02em]">Contrast</h2>
-          <p className="text-[10px] sm:text-[11px] text-[#8e8e93] mt-1">APCA measurement</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }}></div>
-          <span className="text-[9px] sm:text-[10px] text-[#8e8e93] font-medium tracking-wide uppercase">{level}</span>
-        </div>
+      <div className="grid grid-cols-2 gap-2">
+        {cards.map(({ label, badge, content }) => (
+          <div
+            key={label}
+            className="p-2.5 rounded-md bg-[var(--surface-raised)] border border-[var(--border)]"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-[var(--text-muted)]">{label}</span>
+              <span
+                className="px-1.5 py-0.5 rounded text-[9px] font-medium"
+                style={{ backgroundColor: `${badge.color}1f`, color: badge.color }}
+              >
+                {badge.level}
+              </span>
+            </div>
+            <div className="text-xl font-medium text-[var(--text-primary)] tracking-tight">
+              {content}
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="text-center mb-3 sm:mb-4 flex-1 flex flex-col justify-center">
-        <div className="text-3xl sm:text-4xl font-bold text-white mb-1 sm:mb-2 tracking-[-0.02em]">
-          <span className="text-[#8e8e93] text-xl sm:text-2xl">Lc</span>
-          <span className="ml-1">
-            {contrastScore > 0 ? '+' : ''}{contrastScore.toFixed(1)}
-          </span>
+      <div>
+        <div className="relative w-full h-1.5 bg-[var(--surface-raised)] rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-[width,background-color] duration-300 ease-[var(--ease-out)]"
+            style={{ width: `${percentage}%`, backgroundColor: apca.color }}
+          />
         </div>
-        <p className="text-[9px] sm:text-[10px] text-[#636366] italic mb-2">{getContrastDirection(contrastScore)}</p>
-      </div>
-
-      <div className="mt-auto">
-        <ScoreVisualization score={contrastScore} color={color} />
-        <div className="flex justify-between mt-2 text-[8px] text-[#636366]">
+        <div className="flex justify-between mt-1 text-[9px] text-[var(--text-muted)]">
           <span>0</span>
           <span>30</span>
           <span>60</span>
@@ -59,8 +87,10 @@ function ResultsSection({ contrastScore }: ResultsSectionProps) {
           <span>106</span>
         </div>
       </div>
-    </div>
+
+      <p className="px-2.5 py-1.5 rounded bg-[var(--surface-raised)]/60 border border-[var(--border)] text-[10px] text-[var(--text-muted)]">
+        {getComparisonNote(contrastScore, wcagScore, size, weight)}
+      </p>
+    </section>
   )
 }
-
-export { ResultsSection }

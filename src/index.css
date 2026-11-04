@@ -1,1 +1,116 @@
 @import "tailwindcss";
+
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --bg: #0a0a0c;
+  --surface: #131316;
+  --surface-raised: #1c1c21;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.16);
+  --text-muted: #7e7e86;
+  --text-primary: #ededef;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-muted);
+  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  -webkit-font-smoothing: antialiased;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity 260ms var(--ease-out),
+    transform 260ms var(--ease-out);
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+.leva-row {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+}
+
+.leva-input {
+  height: 26px;
+  padding: 0 8px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-primary);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.leva-input:focus,
+.leva-input:hover {
+  border-color: var(--border-hover);
+}
+
+input[type="range"].leva-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: ew-resize;
+}
+
+input[type="range"].leva-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--text-primary);
+  transition: transform 120ms var(--ease-out);
+}
+
+input[type="range"].leva-slider::-moz-range-thumb {
+  width: 10px;
+  height: 14px;
+  border: none;
+  border-radius: 2px;
+  background: var(--text-primary);
+  transition: transform 120ms var(--ease-out);
+}
+
+input[type="range"].leva-slider:active::-webkit-slider-thumb {
+  transform: scale(0.9);
+}
+
+.btn-press {
+  transition:
+    transform 150ms var(--ease-out),
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.btn-press:active {
+  transform: scale(0.95);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .btn-press {
+    transition-duration: 0ms !important;
+  }
+}

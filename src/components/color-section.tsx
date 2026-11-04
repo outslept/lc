@@ -1,92 +1,154 @@
 import { useState, useRef, useEffect } from 'react'
 import { HexColorPicker } from 'react-colorful'
-import { createPortal } from 'react-dom'
-import { getElementPosition, createClickOutsideHandler } from '../lib/dom'
-import { useColorStore } from '../store/color'
+import { useColorStore, SUGGESTED_FONTS } from '../store/color'
+import { toHex } from '../lib/contrast'
 
-interface ColorInputProps {
+const SLIDERS = [
+  { key: 'size', min: 12, max: 64, step: 1, unit: 'px' },
+  { key: 'weight', min: 300, max: 800, step: 100 },
+  { key: 'leading', min: 1, max: 2, step: 0.05 },
+  { key: 'tracking', min: -0.06, max: 0.15, step: 0.01, unit: 'em' },
+] as const
+
+function ColorRow({
+  label,
+  value,
+  onChange,
+}: {
   label: string
   value: string
-  onChange: (value: string) => void
-}
-
-function ColorInput({ label, value, onChange }: ColorInputProps) {
-  const [showPicker, setShowPicker] = useState(false)
-  const buttonRef = useRef<HTMLButtonElement>(null)
-  const pickerRef = useRef<HTMLDivElement>(null)
+  onChange: (v: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const hexValue = toHex(value)
 
   useEffect(() => {
-    if (showPicker) {
-      const handler = createClickOutsideHandler(
-        [buttonRef, pickerRef],
-        () => setShowPicker(false)
-      )
-
-      document.addEventListener('mousedown', handler)
-      return () => document.removeEventListener('mousedown', handler)
+    if (!open) return
+    const onMouseDown = (e: MouseEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false)
     }
-  }, [showPicker])
-
-  const pickerContent = showPicker ? (
-    <div
-      ref={pickerRef}
-      className="fixed z-50 p-4 bg-[#2c2c2e] rounded-2xl shadow-2xl"
-      style={getElementPosition(buttonRef.current)}
-    >
-      <HexColorPicker color={value} onChange={onChange} />
-      <button
-        onClick={() => setShowPicker(false)}
-        className="mt-3 w-full px-3 py-2 text-[13px] font-medium text-[#007aff] bg-[#1c1c1e] rounded-xl hover:bg-[#2c2c2e] transition-all duration-200"
-      >
-        Done
-      </button>
-    </div>
-  ) : null
+    document.addEventListener('mousedown', onMouseDown)
+    return () => document.removeEventListener('mousedown', onMouseDown)
+  }, [open])
 
   return (
-    <div>
-      <label className="block text-[13px] font-medium text-[#8e8e93] mb-3">
-        {label}
-      </label>
-
-      <div className="flex items-center space-x-3">
+    <div className="leva-row">
+      <span className="text-[11px] text-[var(--text-muted)] truncate">{label}</span>
+      <div ref={wrapRef} className="relative flex items-center gap-1.5">
         <button
-          ref={buttonRef}
-          onClick={() => setShowPicker(!showPicker)}
-          className="w-12 h-12 rounded-xl transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-[#007aff]/20 flex-shrink-0"
-          style={{ backgroundColor: value }}
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="btn-press w-[26px] h-[26px] rounded-[5px] border border-[var(--border-hover)] shrink-0 cursor-pointer"
+          style={{ backgroundColor: hexValue }}
+          aria-label={`Pick ${label}`}
         />
-
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 h-12 px-4 bg-[#2c2c2e] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#007aff]/50 font-mono text-[14px] text-white placeholder-[#8e8e93] transition-all duration-200 hover:bg-[#3a3a3c]"
+          className="leva-input w-full"
           placeholder="#000000"
         />
-      </div>
 
-      {createPortal(pickerContent, document.body)}
+        {open && (
+          <div className="absolute bottom-full left-0 mb-2 z-50 p-3 bg-[var(--surface-raised)] border border-[var(--border-hover)] rounded-lg shadow-[0_16px_40px_rgba(0,0,0,0.6)]">
+            <HexColorPicker color={hexValue} onChange={onChange} />
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="btn-press mt-2 w-full py-1 text-[11px] font-medium text-[#0a0a0c] bg-[var(--text-primary)] rounded cursor-pointer"
+            >
+              done
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
-function ColorSection() {
-  const { textColor, bgColor, setTextColor, setBgColor } = useColorStore()
+export function ColorSection() {
+  const state = useColorStore()
+  const { textColor, bgColor, setTextColor, setBgColor, swapColors, font, setType, resetType } =
+    state
 
   return (
-    <div className="bg-[#1c1c1e] rounded-3xl p-4 sm:p-6 lg:p-8">
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-[15px] sm:text-[17px] font-semibold text-white">Color Picker</h1>
-        <p className="text-[11px] sm:text-[13px] text-[#8e8e93] mt-1">Configure text and background colors</p>
+    <section className="panel p-3.5 space-y-3.5">
+      <div>
+        <header className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border)]">
+          <span className="text-[11px] font-medium text-[var(--text-primary)]">colors</span>
+          <button
+            type="button"
+            onClick={swapColors}
+            className="btn-press px-1.5 py-0.5 rounded bg-[var(--surface-raised)] border border-[var(--border)] hover:border-[var(--border-hover)] text-[10px] text-[var(--text-primary)] cursor-pointer"
+            title="Swap foreground & background"
+          >
+            ⇄ swap
+          </button>
+        </header>
+        <div className="space-y-1.5">
+          <ColorRow label="fg" value={textColor} onChange={setTextColor} />
+          <ColorRow label="bg" value={bgColor} onChange={setBgColor} />
+        </div>
       </div>
 
-      <div className="space-y-6 sm:space-y-8">
-        <ColorInput label="Text Color" value={textColor} onChange={setTextColor} />
-        <ColorInput label="Background Color" value={bgColor} onChange={setBgColor} />
+      <div>
+        <header className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border)]">
+          <span className="text-[11px] font-medium text-[var(--text-primary)]">typography</span>
+          <button
+            type="button"
+            onClick={resetType}
+            className="btn-press px-1.5 py-0.5 rounded bg-[var(--surface-raised)] border border-[var(--border)] hover:border-[var(--border-hover)] text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+          >
+            reset
+          </button>
+        </header>
+
+        <div className="space-y-1.5">
+          <div className="leva-row">
+            <span className="text-[11px] text-[var(--text-muted)]">family</span>
+            <input
+              type="text"
+              list="gfonts"
+              value={font}
+              onChange={(e) => setType('font', e.target.value)}
+              placeholder="Any Google Font..."
+              className="leva-input w-full"
+            />
+            <datalist id="gfonts">
+              {SUGGESTED_FONTS.map((f) => (
+                <option key={f} value={f} />
+              ))}
+            </datalist>
+          </div>
+
+          {SLIDERS.map(({ key, min, max, step, ...rest }) => {
+            const unit = 'unit' in rest ? rest.unit : ''
+            const val = state[key]
+            return (
+              <div key={key} className="leva-row">
+                <span className="text-[11px] text-[var(--text-muted)] truncate">{key}</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min={min}
+                    max={max}
+                    step={step}
+                    value={val}
+                    onChange={(e) => setType(key, parseFloat(e.target.value))}
+                    className="leva-slider"
+                  />
+                  <span className="leva-input inline-flex items-center justify-end min-w-[52px] text-[11px] select-none">
+                    {val}
+                    {unit && <span className="text-[var(--text-muted)] ml-0.5">{unit}</span>}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
-    </div>
+    </section>
   )
 }
-
-export { ColorSection }

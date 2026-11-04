@@ -1,57 +1,27 @@
-import { useState, useEffect } from 'react'
-import { calculateAPCAContrast, calculateWCAGContrast } from './lib/contrast'
+import { useMemo } from 'react'
+import { getContrastScores } from './lib/contrast'
 import { useColorStore } from './store/color'
 import { ColorSection } from './components/color-section'
 import { ResultsSection } from './components/results-section'
 import { TextPreview } from './components/text-preview'
-import { ComparisonSection } from './components/comparison-section'
 
-function App() {
+export default function App() {
   const { textColor, bgColor } = useColorStore()
-  const [contrastScore, setContrastScore] = useState(0)
-  const [wcagScore, setWcagScore] = useState(0)
 
-  useEffect(() => {
-    const calculateScores = async () => {
-      try {
-        const [apcaScore, wcagRatio] = await Promise.all([
-          calculateAPCAContrast(textColor, bgColor),
-          calculateWCAGContrast(textColor, bgColor)
-        ])
-
-        setContrastScore(apcaScore)
-        setWcagScore(wcagRatio)
-      } catch (error) {
-        console.error('Error calculating contrast:', error)
-        setContrastScore(0)
-        setWcagScore(0)
-      }
-    }
-
-    calculateScores()
-  }, [textColor, bgColor])
+  const { contrastScore, wcagScore } = useMemo(
+    () => getContrastScores(textColor, bgColor),
+    [textColor, bgColor]
+  )
 
   return (
-    <div className="min-h-screen bg-[#000000]">
-      <div className="lg:hidden p-4 sm:p-6 space-y-4 sm:space-y-6">
-        <ColorSection />
-        <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
-          <ResultsSection contrastScore={contrastScore} />
-          <ComparisonSection apcaScore={contrastScore} wcagScore={wcagScore} />
+    <main className="min-h-svh lg:h-svh lg:overflow-hidden flex items-center justify-center p-3 sm:p-4">
+      <div className="w-full max-w-6xl lg:h-[min(680px,calc(100svh-32px))] grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-3">
+        <div className="flex flex-col gap-3 justify-between">
+          <ResultsSection contrastScore={contrastScore} wcagScore={wcagScore} />
+          <ColorSection />
         </div>
-        <TextPreview textColor={textColor} bgColor={bgColor} />
+        <TextPreview contrastScore={contrastScore} />
       </div>
-
-      <div className="hidden lg:grid lg:grid-cols-3 lg:gap-6 lg:p-6 lg:h-full">
-        <ColorSection />
-        <ResultsSection contrastScore={contrastScore} />
-        <ComparisonSection apcaScore={contrastScore} wcagScore={wcagScore} />
-        <div className="col-span-3">
-          <TextPreview textColor={textColor} bgColor={bgColor} className="h-full" />
-        </div>
-      </div>
-    </div>
+    </main>
   )
 }
-
-export default App
