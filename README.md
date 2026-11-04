@@ -1,3 +1,5 @@
+<img src="./.github/banner.png" />
+
 # lc.
 
 > Built around **Andrew Somers'** *Accessible Perceptual Contrast Algorithm (APCA)* — spatial-frequency contrast where readability depends on polarity (`Lc`), font size, and weight, not just a flat luminance ratio.
