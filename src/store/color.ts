@@ -16,7 +16,7 @@ export const SUGGESTED_FONTS = [
   'Fira Code',
   'Space Mono',
   'IBM Plex Mono',
-]
+] as const
 
 export interface TypographyState {
   font: string
@@ -53,7 +53,7 @@ export const useColorStore = create<ColorStore>()(
       setTextColor: (textColor) => set({ textColor }),
       setBgColor: (bgColor) => set({ bgColor }),
       swapColors: () => set((s) => ({ textColor: s.bgColor, bgColor: s.textColor })),
-      setType: (key, val) => set({ [key]: val }),
+      setType: (key, val) => set((s) => (s[key] === val ? s : { [key]: val })),
       resetType: () => set(DEFAULT_TYPE),
     }),
     { name: 'color-storage' }
