@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 import { useColorStore } from '../store/color'
 import { getRequiredLc } from '../lib/eval'
 import { toHex } from '../lib/contrast'
@@ -6,12 +6,73 @@ import { toHex } from '../lib/contrast'
 const DEFAULT_TEXT =
   'The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. 0123456789'
 
-const SCALE_PX = [12, 14, 16, 20, 24]
+const SCALE_PX = [12, 14, 16, 20, 24] as const
+const BORDER_MIX_STYLE = { borderColor: 'color-mix(in srgb, var(--fg) 14%, transparent)' } as const
+const LABEL_MIX_STYLE = { color: 'color-mix(in srgb, var(--fg) 65%, transparent)' } as const
+
+const ScaleGrid = memo(function ScaleGrid({
+  absLc,
+  fontFamily,
+  weight,
+  tracking,
+}: {
+  absLc: number
+  fontFamily: string
+  weight: number
+  tracking: number
+}) {
+  const letterSpacing = `${tracking}em`
+  return (
+    <div
+      className="pt-4 border-t grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-3"
+      style={BORDER_MIX_STYLE}
+    >
+      {SCALE_PX.map((px) => {
+        const req = getRequiredLc(px, weight)
+        const pass = absLc >= req
+        return (
+          <div key={px} className="min-w-0">
+            <div
+              className="flex items-center gap-1.5 text-[10px] font-mono mb-0.5 tabular-nums"
+              style={LABEL_MIX_STYLE}
+            >
+              <span>{px}px</span>
+              <span>·</span>
+              <span>Lc≥{req}</span>
+              <span>{pass ? '✓' : '✕'}</span>
+            </div>
+            <p
+              className="truncate"
+              style={{
+                fontFamily,
+                fontSize: `${px}px`,
+                fontWeight: weight,
+                lineHeight: 1.35,
+                letterSpacing,
+                opacity: pass ? 1 : 0.55,
+              }}
+            >
+              Aa Bb Cc · The quick brown fox 0123
+            </p>
+          </div>
+        )
+      })}
+    </div>
+  )
+})
 
 export function TextPreview({ contrastScore }: { contrastScore: number }) {
-  const { textColor, bgColor, font, size, weight, leading, tracking } = useColorStore()
+  const textColor = useColorStore((s) => s.textColor)
+  const bgColor = useColorStore((s) => s.bgColor)
+  const font = useColorStore((s) => s.font)
+  const size = useColorStore((s) => s.size)
+  const weight = useColorStore((s) => s.weight)
+  const leading = useColorStore((s) => s.leading)
+  const tracking = useColorStore((s) => s.tracking)
+
   const [customText, setCustomText] = useState(DEFAULT_TEXT)
   const [copied, setCopied] = useState(false)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const cleanFont = font.trim() || 'Inter'
   const fontFamily = `"${cleanFont}", system-ui, sans-serif`
@@ -34,19 +95,18 @@ export function TextPreview({ contrastScore }: { contrastScore: number }) {
     return () => clearTimeout(id)
   }, [cleanFont])
 
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current !== null) clearTimeout(copyTimerRef.current)
+    }
+  }, [])
+
   const copyCss = async () => {
-    const css = [
-      `color: ${textColor};`,
-      `background-color: ${bgColor};`,
-      `font-family: ${fontFamily};`,
-      `font-size: ${size}px;`,
-      `font-weight: ${weight};`,
-      `line-height: ${leading};`,
-      `letter-spacing: ${tracking}em;`,
-    ].join('\n')
+    const css = `color: ${textColor};\nbackground-color: ${bgColor};\nfont-family: ${fontFamily};\nfont-size: ${size}px;\nfont-weight: ${weight};\nline-height: ${leading};\nletter-spacing: ${tracking}em;`
     await navigator.clipboard.writeText(css)
     setCopied(true)
-    setTimeout(() => setCopied(false), 1100)
+    if (copyTimerRef.current !== null) clearTimeout(copyTimerRef.current)
+    copyTimerRef.current = setTimeout(() => setCopied(false), 1100)
   }
 
   return (
@@ -102,41 +162,12 @@ export function TextPreview({ contrastScore }: { contrastScore: number }) {
           placeholder="Type to test typography and contrast..."
         />
 
-        <div
-          className="pt-4 border-t grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-3"
-          style={{ borderColor: 'color-mix(in srgb, var(--fg) 14%, transparent)' }}
-        >
-          {SCALE_PX.map((px) => {
-            const req = getRequiredLc(px, weight)
-            const pass = absLc >= req
-            return (
-              <div key={px} className="min-w-0">
-                <div
-                  className="flex items-center gap-1.5 text-[10px] font-mono mb-0.5 tabular-nums"
-                  style={{ color: 'color-mix(in srgb, var(--fg) 65%, transparent)' }}
-                >
-                  <span>{px}px</span>
-                  <span>·</span>
-                  <span>Lc≥{req}</span>
-                  <span>{pass ? '✓' : '✕'}</span>
-                </div>
-                <p
-                  className="truncate"
-                  style={{
-                    fontFamily,
-                    fontSize: `${px}px`,
-                    fontWeight: weight,
-                    lineHeight: 1.35,
-                    letterSpacing: `${tracking}em`,
-                    opacity: pass ? 1 : 0.55,
-                  }}
-                >
-                  Aa Bb Cc · The quick brown fox 0123
-                </p>
-              </div>
-            )
-          })}
-        </div>
+        <ScaleGrid
+          absLc={absLc}
+          fontFamily={fontFamily}
+          weight={weight}
+          tracking={tracking}
+        />
       </div>
     </section>
   )

@@ -1,16 +1,24 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import { HexColorPicker } from 'react-colorful'
-import { useColorStore, SUGGESTED_FONTS } from '../store/color'
+import { useColorStore, SUGGESTED_FONTS, type TypographyState } from '../store/color'
 import { toHex } from '../lib/contrast'
 
-const SLIDERS = [
-  { key: 'size', min: 12, max: 64, step: 1, unit: 'px' },
-  { key: 'weight', min: 300, max: 800, step: 100 },
-  { key: 'leading', min: 1, max: 2, step: 0.05 },
-  { key: 'tracking', min: -0.06, max: 0.15, step: 0.01, unit: 'em' },
-] as const
+interface SliderSpec {
+  readonly key: Exclude<keyof TypographyState, 'font'>
+  readonly min: number
+  readonly max: number
+  readonly step: number
+  readonly unit: string
+}
 
-function ColorRow({
+const SLIDERS: readonly SliderSpec[] = [
+  { key: 'size', min: 12, max: 64, step: 1, unit: 'px' },
+  { key: 'weight', min: 300, max: 800, step: 100, unit: '' },
+  { key: 'leading', min: 1, max: 2, step: 0.05, unit: '' },
+  { key: 'tracking', min: -0.06, max: 0.15, step: 0.01, unit: 'em' },
+]
+
+const ColorRow = memo(function ColorRow({
   label,
   value,
   onChange,
@@ -66,12 +74,23 @@ function ColorRow({
       </div>
     </div>
   )
-}
+})
 
 export function ColorSection() {
-  const state = useColorStore()
-  const { textColor, bgColor, setTextColor, setBgColor, swapColors, font, setType, resetType } =
-    state
+  const textColor = useColorStore((s) => s.textColor)
+  const bgColor = useColorStore((s) => s.bgColor)
+  const font = useColorStore((s) => s.font)
+  const size = useColorStore((s) => s.size)
+  const weight = useColorStore((s) => s.weight)
+  const leading = useColorStore((s) => s.leading)
+  const tracking = useColorStore((s) => s.tracking)
+  const setTextColor = useColorStore((s) => s.setTextColor)
+  const setBgColor = useColorStore((s) => s.setBgColor)
+  const swapColors = useColorStore((s) => s.swapColors)
+  const setType = useColorStore((s) => s.setType)
+  const resetType = useColorStore((s) => s.resetType)
+
+  const sliderValues = { size, weight, leading, tracking }
 
   return (
     <section className="panel p-3.5 space-y-3.5">
@@ -123,9 +142,8 @@ export function ColorSection() {
             </datalist>
           </div>
 
-          {SLIDERS.map(({ key, min, max, step, ...rest }) => {
-            const unit = 'unit' in rest ? rest.unit : ''
-            const val = state[key]
+          {SLIDERS.map(({ key, min, max, step, unit }) => {
+            const val = sliderValues[key]
             return (
               <div key={key} className="leva-row">
                 <span className="text-[11px] text-[var(--text-muted)] truncate">{key}</span>
@@ -136,12 +154,12 @@ export function ColorSection() {
                     max={max}
                     step={step}
                     value={val}
-                    onChange={(e) => setType(key, parseFloat(e.target.value))}
+                    onChange={(e) => setType(key, Number(e.target.value))}
                     className="leva-slider"
                   />
                   <span className="leva-input inline-flex items-center justify-end min-w-[52px] text-[11px] select-none">
                     {val}
-                    {unit && <span className="text-[var(--text-muted)] ml-0.5">{unit}</span>}
+                    {unit !== '' && <span className="text-[var(--text-muted)] ml-0.5">{unit}</span>}
                   </span>
                 </div>
               </div>

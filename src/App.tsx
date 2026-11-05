@@ -6,7 +6,8 @@ import { ResultsSection } from './components/results-section'
 import { TextPreview } from './components/text-preview'
 
 export default function App() {
-  const { textColor, bgColor } = useColorStore()
+  const textColor = useColorStore((s) => s.textColor)
+  const bgColor = useColorStore((s) => s.bgColor)
 
   const { contrastScore, wcagScore } = useMemo(
     () => getContrastScores(textColor, bgColor),

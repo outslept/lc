@@ -12,34 +12,12 @@ interface ResultsSectionProps {
 }
 
 export function ResultsSection({ contrastScore, wcagScore }: ResultsSectionProps) {
-  const { size, weight } = useColorStore()
+  const size = useColorStore((s) => s.size)
+  const weight = useColorStore((s) => s.weight)
+
   const apca = getAPCALevel(contrastScore, size, weight)
   const wcag = getWCAGLevel(wcagScore)
   const percentage = Math.min((Math.abs(contrastScore) / 106) * 100, 100)
-
-  const cards = [
-    {
-      label: 'APCA',
-      badge: apca,
-      content: (
-        <>
-          <span className="text-xs text-[var(--text-muted)] mr-0.5">Lc</span>
-          {contrastScore > 0 ? '+' : ''}
-          {contrastScore.toFixed(1)}
-        </>
-      ),
-    },
-    {
-      label: 'WCAG 2.1',
-      badge: wcag,
-      content: (
-        <>
-          {wcagScore.toFixed(2)}
-          <span className="text-xs text-[var(--text-muted)]">:1</span>
-        </>
-      ),
-    },
-  ]
 
   return (
     <section className="panel p-3.5 space-y-3 tabular-nums">
@@ -51,25 +29,38 @@ export function ResultsSection({ contrastScore, wcagScore }: ResultsSectionProps
       </header>
 
       <div className="grid grid-cols-2 gap-2">
-        {cards.map(({ label, badge, content }) => (
-          <div
-            key={label}
-            className="p-2.5 rounded-md bg-[var(--surface-raised)] border border-[var(--border)]"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-[var(--text-muted)]">{label}</span>
-              <span
-                className="px-1.5 py-0.5 rounded text-[9px] font-medium"
-                style={{ backgroundColor: `${badge.color}1f`, color: badge.color }}
-              >
-                {badge.level}
-              </span>
-            </div>
-            <div className="text-xl font-medium text-[var(--text-primary)] tracking-tight">
-              {content}
-            </div>
+        <div className="p-2.5 rounded-md bg-[var(--surface-raised)] border border-[var(--border)]">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-[var(--text-muted)]">APCA</span>
+            <span
+              className="px-1.5 py-0.5 rounded text-[9px] font-medium"
+              style={{ backgroundColor: `${apca.color}1f`, color: apca.color }}
+            >
+              {apca.level}
+            </span>
           </div>
-        ))}
+          <div className="text-xl font-medium text-[var(--text-primary)] tracking-tight">
+            <span className="text-xs text-[var(--text-muted)] mr-0.5">Lc</span>
+            {contrastScore > 0 ? '+' : ''}
+            {contrastScore.toFixed(1)}
+          </div>
+        </div>
+
+        <div className="p-2.5 rounded-md bg-[var(--surface-raised)] border border-[var(--border)]">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-[var(--text-muted)]">WCAG 2.1</span>
+            <span
+              className="px-1.5 py-0.5 rounded text-[9px] font-medium"
+              style={{ backgroundColor: `${wcag.color}1f`, color: wcag.color }}
+            >
+              {wcag.level}
+            </span>
+          </div>
+          <div className="text-xl font-medium text-[var(--text-primary)] tracking-tight">
+            {wcagScore.toFixed(2)}
+            <span className="text-xs text-[var(--text-muted)]">:1</span>
+          </div>
+        </div>
       </div>
 
       <div>
