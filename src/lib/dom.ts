@@ -1,18 +1,21 @@
+const EMPTY_POSITION = { top: 0, left: 0 }
+const PICKER_WIDTH = 280
+
 export function getElementPosition(element: HTMLElement | null): { top: number; left: number } {
-  if (!element) return { top: 0, left: 0 }
+  if (!element) return EMPTY_POSITION
 
   const rect = element.getBoundingClientRect()
-  const pickerWidth = 280
+  const innerWidth = window.innerWidth
 
   let left = rect.right + 10
   const top = rect.top
 
-  if (left + pickerWidth > window.innerWidth) {
-    left = rect.left - pickerWidth - 10
+  if (left + PICKER_WIDTH > innerWidth) {
+    left = rect.left - PICKER_WIDTH - 10
   }
 
   if (left < 0) {
-    left = (window.innerWidth - pickerWidth) / 2
+    left = (innerWidth - PICKER_WIDTH) / 2
   }
 
   return { top, left }
@@ -24,12 +27,12 @@ export function createClickOutsideHandler(
 ) {
   return (event: MouseEvent) => {
     const target = event.target as Node
-    const isOutside = refs.every(ref =>
-      !ref.current || !ref.current.contains(target)
-    )
-
-    if (isOutside) {
-      callback()
+    for (let i = 0; i < refs.length; i++) {
+      const current = refs[i].current
+      if (current && current.contains(target)) {
+        return
+      }
     }
+    callback()
   }
 }
